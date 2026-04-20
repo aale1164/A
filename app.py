@@ -1,70 +1,92 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import base64
+# -*- coding: utf-8 -*-
+# محاكاة خريطة مسطحة (الإسقاط السمتي) - نسخة تعمل قطعاً في كولاب
 
-st.set_page_config(page_title="A", layout="wide")
+# أولاً: تثبيت plotly إذا لم يكن موجوداً
+!pip install -q plotly
 
-# --- تحويل الصورة إلى Base64 ---
-@st.cache_data
-def get_image_base64(image_path):
-    try:
-        with open(image_path, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except:
-        return None
+import plotly.graph_objects as go
+import numpy as np
 
-image_path = "AAAR12.webp"
-image_base64 = get_image_base64(image_path)
+# ============================================
+# 1. نرسم خريطة مسطحة باستخدام الإسقاط السمتي
+# ============================================
 
-# --- HTML مع الصورة كخلفية ---
-html_code = f"""
-<!DOCTYPE html>
-<html dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{
-            font-family: 'Tajawal', sans-serif;
-            background-image: url('data:image/webp;base64,{image_base64}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: #FFFFFF;
-            text-shadow: 2px 2px 15px rgba(0,0,0,0.9);
-        }}
-        h1 {{
-            font-size: 15vw;
-            font-weight: 900;
-            color: #FFD700;
-            text-shadow: 0 0 30px rgba(255,215,0,0.7), 2px 2px 15px black;
-        }}
-        p {{
-            font-size: 1.5rem;
-            opacity: 0.9;
-            margin-top: 20px;
-        }}
-    </style>
-</head>
-<body>
-    <h1>A</h1>
-    <p>صفحة جديدة تماماً</p>
-    <p style="font-size: 1rem; margin-top: 50px;">جاهز للبناء ✦</p>
-</body>
-</html>
-"""
+# نضيف نقطة وهمية واحدة فقط لتفعيل الخريطة (بدونها قد لا تظهر)
+fig = go.Figure()
 
-# عرض المكون إذا تم تحميل الصورة بنجاح
-if image_base64:
-    components.html(html_code, height=800, scrolling=False)
-else:
-    st.error("الصورة AAAR12.webp غير موجودة في مجلد المشروع.")
+# هذه هي الطريقة الصحيحة لإظهار الخريطة المسطحة
+fig.add_trace(go.Scattergeo(
+    lon=[0], lat=[0],   # نقطة صامتة في المحيط
+    mode='markers',
+    marker=dict(size=0.1, opacity=0),  # مخفية تماماً
+    showlegend=False
+))
+
+# تعيين نوع الإسقاط إلى سمتي مسطح (مركزه القطب الشمالي)
+fig.update_geos(
+    projection_type="azimuthal equidistant",
+    projection_rotation=dict(lon=0, lat=90, roll=0),
+    showcoastlines=True,
+    coastlinecolor="DarkBlue",
+    showland=True,
+    landcolor="LightGreen",
+    showocean=True,
+    oceancolor="LightBlue",
+    showcountries=True,
+    countrycolor="gray",
+    showlakes=True,
+    lakecolor="LightBlue",
+    # خطوط الطول والعرض
+    lataxis_showgrid=True,
+    lonaxis_showgrid=True,
+    lataxis_gridcolor="white",
+    lonaxis_gridcolor="white",
+    lataxis_range=[-90, 90],
+    lonaxis_range=[-180, 180]
+)
+
+# ============================================
+# 2. إضافة الشمس والقمر والنجوم
+# ============================================
+
+# الشمس (نقطة كبيرة صفراء)
+fig.add_trace(go.Scattergeo(
+    lon=[0], lat=[45],
+    mode='markers',
+    marker=dict(size=20, color='gold', symbol='circle', line=dict(width=2, color='orange')),
+    name='الشمس ☀️'
+))
+
+# القمر
+fig.add_trace(go.Scattergeo(
+    lon=[-120], lat=[20],
+    mode='markers',
+    marker=dict(size=10, color='silver', symbol='circle', line=dict(width=1, color='gray')),
+    name='القمر 🌙'
+))
+
+# النجوم (100 نقطة عشوائية)
+np.random.seed(42)
+lons = np.random.uniform(-180, 180, 100)
+lats = np.random.uniform(-90, 90, 100)
+fig.add_trace(go.Scattergeo(
+    lon=lons, lat=lats,
+    mode='markers',
+    marker=dict(size=3, color='white', opacity=0.7),
+    name='النجوم ✨'
+))
+
+# ============================================
+# 3. تنسيق الشكل
+# ============================================
+fig.update_layout(
+    title=dict(text='🌍 الأرض المسطحة - الإسقاط السمتي متساوي المسافات', x=0.5, font=dict(size=18)),
+    geo=dict(bgcolor='black'),
+    paper_bgcolor='black',
+    height=700,
+    margin=dict(l=0, r=0, t=50, b=0),
+    legend=dict(font=dict(color='white'), bgcolor='rgba(0,0,0,0.5)')
+)
+
+fig.show()
+print("✅ إذا ظهرت خريطة فارغة، حرك الفأرة عليها وستظهر القارات والشمس والقمر.")
