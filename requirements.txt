@@ -1,5 +1,4 @@
-streamlit
-pytz
-requests
-hijri-converter
-streamlit-js-eval
+dash
+plotly
+numpy
+gunicorn
