@@ -1,0 +1,5 @@
+streamlit
+pytz
+requests
+hijri-converter
+streamlit-js-eval
